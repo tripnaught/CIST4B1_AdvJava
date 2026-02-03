@@ -1,0 +1,11 @@
+{
+	"files.exclude": {
+		"**/.gitignore": true,
+		"**/*.class": true,
+		"**/LICENSE": true
+	},
+	"java.project.sourcePaths": [
+		"lectures",
+		"homework"
+	],
+} 
