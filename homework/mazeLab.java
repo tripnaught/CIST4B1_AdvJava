@@ -5,6 +5,7 @@ public class mazeLab {
 
 	public static boolean shouldPrintProcess = false;
 
+	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		int[][] testMazeSmall = {
 				{ 1, 1, 0, 1 },
