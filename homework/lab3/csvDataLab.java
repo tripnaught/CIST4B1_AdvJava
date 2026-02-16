@@ -1,26 +1,33 @@
 package lab3;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
 public class csvDataLab {
+	// for whatever reason, vs code needs this to be the root of the WORKSPACE, not of the JAVA FILE.
+	// if you're running this on a different machine, you might need to change CSV_FILEPATH.
 	public static final String CSV_FILEPATH = "homework/lab3/data.csv";
+	public static Path path = Path.of(CSV_FILEPATH);
+
 	public static ArrayList<Sale> allSales = new ArrayList<>();
 
 	public static Scanner scan = new Scanner(System.in);
 
 	public static void main(String[] args) {
 		System.out.println("\n============================================================");
-		System.out.println("=W=E=L=C=O=M=E====T=O====R=E=C=O=R=D=S====P=R=O=C=E=S=S=O=R=");
+		System.out.println("\u001b[31m=W=E=L=C=O=M=E====T=O====R=E=C=O=R=D=S====P=R=O=C=E=S=S=O=R=\u001b[39m");
 		while (true) {
 
 			System.out.println("============================================================");
 			System.out.println("Please select an option. Type anything else to quit.");
+			System.out.println("G: Generate sales data");
 			System.out.println("L: Load sale data");
 			System.out.println("R: Retrieve latest sale");
 			System.out.println("T: Total all revenue");
@@ -31,13 +38,38 @@ public class csvDataLab {
 			System.out.println("\u001b[39m");
 			System.out.println("============================================================");
 
+			if (allSales == null || allSales.size() == 0) {
+				if (!(input.equals("G") || input.equals("L"))) {
+					System.out.println("Error: No data loaded! Try selecting option L.");
+					continue;
+				}
+			}
+
 			long start, end;
+			// #region switch statement
 			switch (input) {
+				// generate data
+				case "G":
+					System.out.println("Please type the number of rows to generate:");
+					String rowsString = scan.nextLine();
+					try {
+						int rows = Integer.parseInt(rowsString);
+						start = System.nanoTime();
+						generateCSV(rows);
+						end = System.nanoTime();
+						System.out.printf("%d rows generated successfully!\n", rows);
+						System.out.println("Warning: You will have to re-load this data.");
+						printDuration(start, end);
+					} catch (NumberFormatException e) {
+						System.out.println("Error: Invalid integer input: " + rowsString);
+					}
+					break;
+
 				// load data
 				case "L":
 					System.out.println("Loading data...");
 					start = System.nanoTime();
-					fillAllSales();
+					loadDataIntoAllSales();
 					end = System.nanoTime();
 
 					System.out.println("Sale data loaded successfully!");
@@ -45,15 +77,11 @@ public class csvDataLab {
 					printDuration(start, end);
 					break;
 
-				// get latest sale
+				// retrieve latest sale
 				case "R":
-					if (allSales == null || allSales.size() == 0) {
-						System.out.println("Error: No data loaded!");
-						break;
-					}
 					System.out.println("Finding latest sale...");
 					start = System.nanoTime();
-					Sale latestSale = getLatestSale();
+					Sale latestSale = retrieveLatestSale();
 					end = System.nanoTime();
 
 					System.out.println("Latest sale found:");
@@ -63,10 +91,6 @@ public class csvDataLab {
 
 				// get total revenue
 				case "T":
-					if (allSales == null || allSales.size() == 0) {
-						System.out.println("Error: No data loaded!");
-						break;
-					}
 					System.out.println("Calculating total revenue...");
 					start = System.nanoTime();
 					double revenue = getTotalRevenue();
@@ -87,17 +111,23 @@ public class csvDataLab {
 					ArrayList<Integer> duplicateIds = findDuplicateIds();
 					end = System.nanoTime();
 
-					System.err.println("Duplicate IDs found:");
-					System.err.println(duplicateIds);
+					System.out.println("Duplicate IDs found:");
+					System.out.println(duplicateIds);
+					printDuration(start, end);
 					break;
 
 				default:
 					try {
 						int id = Integer.parseInt(input);
-						// search for sale with id
-						System.out.println(id);
+						start = System.nanoTime();
+						allSales.get(id).printData();
+						end = System.nanoTime();
+						printDuration(start, end);
+					} catch (IndexOutOfBoundsException e) {
+						System.out.println("No sale found with that ID!");
 					} catch (NumberFormatException e) {
-						// input failed every check so user wants to quit. exit entirely
+						// input failed every check so user wants to quit. exit entirely by providing no
+						// more code
 						System.out.println("Bye!");
 						System.out.println("============================================================\n");
 						return;
@@ -106,7 +136,77 @@ public class csvDataLab {
 		}
 	}
 
-	public static void fillAllSales() {
+	// #region generateCSV
+	public static void generateCSV(int rows) {
+		// clear current CSV
+		System.out.println("Clearing old CSV...");
+		try (BufferedWriter bw = Files.newBufferedWriter(path)) {
+			bw.write("");
+		} catch (IOException e) {
+			System.out.format("Error clearing data.csv.");
+		}
+
+		// fill CSV with sales rows
+		System.out.println("Filling CSV...");
+
+		try (BufferedWriter bw = Files.newBufferedWriter(path, StandardOpenOption.APPEND)) {
+			// header row
+			bw.write("sale_id,sale_date,amount,product");
+			bw.newLine();
+
+			for (int i = 0; i < rows; i++) {
+				// sale ID
+				bw.write(Integer.toString(i));
+				bw.write(",");
+
+				// sale date
+				bw.write(Integer.toString(randIntRange(1995, 2027)));
+				bw.write("-");
+				bw.write(Integer.toString(randIntRange(1, 13)));
+				bw.write("-");
+				bw.write(Integer.toString(randIntRange(1, 31)));
+				bw.write(",");
+
+				// amount
+				bw.write(Integer.toString(randIntRange(0, 10000)));
+				bw.write(".");
+				bw.write(Integer.toString(randIntRange(0, 100)));
+				bw.write(",");
+
+				// product
+				String[] products = {
+						"gadget",
+						"gizmo",
+						"whoozit",
+						"whatsit",
+						"thingamabob",
+						"doohickey",
+						"whatchamacalit",
+						"thingy",
+						"book",
+						"car",
+						"toy",
+						"phone",
+						"pet",
+						"subscription",
+				};
+				bw.write(products[randIntRange(0, products.length)]);
+
+				// no extra blank line with no data at the end, please
+				if (i != rows - 1) {
+					bw.newLine();
+				}
+
+				allSales.clear();
+			}
+
+		} catch (IOException e) {
+			System.err.format("Error writing to CSV.");
+		}
+	}
+
+	// #region loadDataIntoAllSales
+	public static void loadDataIntoAllSales() {
 		// clear `allSales` first, since we don't want
 		// multiple copies of the data in this one ArrayList
 		allSales.clear();
@@ -127,7 +227,8 @@ public class csvDataLab {
 
 	}
 
-	public static Sale getLatestSale() {
+	// #region retrieveLatestSale
+	public static Sale retrieveLatestSale() {
 		Sale latestSale = allSales.get(0);
 		for (Sale sale : allSales) {
 			if (sale.year > latestSale.year) {
@@ -141,6 +242,7 @@ public class csvDataLab {
 		return latestSale;
 	}
 
+	// #region getTotalRevenue
 	public static double getTotalRevenue() {
 		double total = 0.00;
 		for (Sale sale : allSales) {
@@ -149,6 +251,7 @@ public class csvDataLab {
 		return total;
 	}
 
+	// #region findDuplicateIds
 	public static ArrayList<Integer> findDuplicateIds() {
 		HashMap<Integer, Integer> idCounts = new HashMap<>();
 		for (Sale sale : allSales) {
@@ -164,13 +267,22 @@ public class csvDataLab {
 		return duplicateIds;
 	}
 
+	// #region printDuration
 	public static void printDuration(long start, long end) {
 		long durationNanoseconds = end - start;
 		double durationMilliseconds = ((double) durationNanoseconds / 1_000_000L);
 		System.out.printf("Time taken: \u001b[33m%f\u001b[39m ms.\n", durationMilliseconds);
 	}
+
+	// #region randIntRange
+	// this function comes from baeldung.com. it's also similar to one
+	// used in last semester's pokemon lab to generate random ints.
+	public static int randIntRange(int min, int max) {
+		return (int) ((Math.random() * (max - min)) + min);
+	}
 }
 
+// #region Sale class
 class Sale {
 	int id;
 	int year;
