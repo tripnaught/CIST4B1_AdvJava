@@ -1,4 +1,4 @@
-package Week3Sorting;
+package week3.sorting;
 
 import java.util.Arrays;
 

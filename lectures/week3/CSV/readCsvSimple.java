@@ -1,4 +1,4 @@
-package Week3CSV;
+package week3.CSV;
 
 import java.io.BufferedReader;
 import java.io.IOException;

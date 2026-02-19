@@ -1,7 +1,7 @@
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class Week1 {
+class week1 {
 	public static Scanner scan = new Scanner(System.in);
 	public static void main(String[] args) {
 		Class1 c1 = new Class1();

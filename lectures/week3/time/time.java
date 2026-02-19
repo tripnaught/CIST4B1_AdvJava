@@ -1,4 +1,4 @@
-package Week3Time;
+package week3.time;
 
 public class time {
 	@SuppressWarnings("unused")
